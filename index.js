@@ -1,15 +1,43 @@
 // Step 1: Simulate User Behavior
-// - Add event listeners for button clicks and form submissions.
-// - Use JavaScript to dynamically update the DOM based on user actions.
+// Add event listeners for button clicks and form submissions
+document.addEventListener('DOMContentLoaded', () => {
+  const simulateBtn = document.getElementById('simulate-click');
+  const form = document.getElementById('user-form');
+  const input = document.getElementById('user-input');
+  const content = document.getElementById('dynamic-content');
+  const error = document.getElementById('error-message');
 
-// Step 2: DOM Manipulation Functions
-// - Implement functions to add, update, and remove DOM elements.
-// - Ensure all elements are dynamically created with appropriate attributes and content.
+  // Button click behavior
+  simulateBtn.addEventListener('click', () => {
+    content.textContent = 'Button was clicked!';
+    error.textContent = '';
+    error.classList.add('hidden');
+  });
 
-// Step 3: Error Handling
-// - Display error messages in the DOM for invalid inputs or missing elements.
-// - Create reusable functions to handle common error cases.
+  // Step 2: DOM Manipulation via Form
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const value = input.value.trim();
 
-// Step 4: Reusable Utilities
-// - Create modular utility functions, such as createElement(tag, attributes).
-// - Ensure all functions follow DRY principles for maintainability.
+    if (value === '') {
+      // Step 3: Error Handling
+      displayError('Input cannot be empty');
+      content.textContent = '';
+    } else {
+      clearError();
+      content.textContent = `Submitted: ${value}`;
+      input.value = '';
+    }
+  });
+
+  // Step 4: Utility Functions
+  function displayError(message) {
+    error.textContent = message;
+    error.classList.remove('hidden');
+  }
+
+  function clearError() {
+    error.textContent = '';
+    error.classList.add('hidden');
+  }
+});

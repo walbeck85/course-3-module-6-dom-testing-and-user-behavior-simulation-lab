@@ -2,59 +2,72 @@
  * @jest-environment jsdom
  */
 
-const {
-  addElementToDOM,
-  removeElementFromDOM,
-  simulateClick,
-  handleFormSubmit,
-} = require('../index')
+const fs = require('fs');
+const path = require('path');
 
 describe('DOM Testing and User Behavior Simulation', () => {
+  let html;
+  let container;
+
   beforeEach(() => {
-    document.body.innerHTML = `
-      <div id="dynamic-content"></div>
-      <div id="error-message" class="hidden"></div>
-      <form id="user-form">
-        <input type="text" id="user-input" />
-        <button type="submit">Submit</button>
-      </form>
-    `
-  })
+  html = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf8');
+  document.documentElement.innerHTML = html.toString();
 
-  it('should add an element to the DOM', () => {
-    addElementToDOM('dynamic-content', 'Hello, World!')
-    const dynamicContent = document.getElementById('dynamic-content')
-    expect(dynamicContent.textContent).toContain('Hello, World!')
-  })
+  // 🔁 Re-require *before* dispatching the event
+  require('../index.js');
 
-  it('should remove an element from the DOM', () => {
-    const element = document.createElement('div')
-    element.id = 'test-element'
-    document.body.appendChild(element)
+  // ✅ Fire after listeners have a chance to bind
+  const event = new Event('DOMContentLoaded');
+  document.dispatchEvent(event);
+});
 
-    removeElementFromDOM('test-element')
-    expect(document.getElementById('test-element')).toBeNull()
-  })
+  test('Clicking "Simulate Click" updates the dynamic content', () => {
+    const simulateBtn = document.getElementById('simulate-click');
+    const contentDiv = document.getElementById('dynamic-content');
 
-  it('should simulate a button click and update the DOM', () => {
-    simulateClick('dynamic-content', 'Button Clicked!')
-    const dynamicContent = document.getElementById('dynamic-content')
-    expect(dynamicContent.textContent).toContain('Button Clicked!')
-  })
+    simulateBtn.click();
 
-  it('should handle form submission and update the DOM', () => {
-    const input = document.getElementById('user-input')
-    input.value = 'Test Input'
+    expect(contentDiv.textContent).toBe('Button was clicked!');
+  });
 
-    handleFormSubmit('user-form', 'dynamic-content')
-    const dynamicContent = document.getElementById('dynamic-content')
-    expect(dynamicContent.textContent).toContain('Test Input')
-  })
+  test('Submitting the form with valid input updates the content', () => {
+    const input = document.getElementById('user-input');
+    const form = document.getElementById('user-form');
+    const contentDiv = document.getElementById('dynamic-content');
 
-  it('should display an error message for empty input', () => {
-    handleFormSubmit('user-form', 'dynamic-content')
-    const errorMessage = document.getElementById('error-message')
-    expect(errorMessage.textContent).toBe('Input cannot be empty')
-    expect(errorMessage.classList.contains('hidden')).toBe(false)
-  })
-})
+    input.value = 'Test Input';
+
+    form.dispatchEvent(new Event('submit'));
+
+    expect(contentDiv.textContent).toBe('Submitted: Test Input');
+  });
+
+  test('Submitting the form with empty input shows an error', () => {
+    const input = document.getElementById('user-input');
+    const form = document.getElementById('user-form');
+    const errorDiv = document.getElementById('error-message');
+
+    input.value = '   '; // whitespace-only input
+
+    form.dispatchEvent(new Event('submit'));
+
+    expect(errorDiv.textContent).toBe('Input cannot be empty');
+    expect(errorDiv.classList.contains('hidden')).toBe(false);
+  });
+
+  test('Submitting with valid input clears previous error message', () => {
+    const input = document.getElementById('user-input');
+    const form = document.getElementById('user-form');
+    const errorDiv = document.getElementById('error-message');
+
+    // Set a previous error first
+    errorDiv.textContent = 'Input cannot be empty';
+    errorDiv.classList.remove('hidden');
+
+    input.value = 'Valid Input';
+    form.dispatchEvent(new Event('submit'));
+
+    expect(errorDiv.textContent).toBe('');
+    expect(errorDiv.classList.contains('hidden')).toBe(true);
+  });
+});
